@@ -17,7 +17,7 @@ class MriWidget(QWidget):
         b.setIconSize
         self.pixmap = QPixmap(512,512)
         
-        image = nibabel.load("2400106729.nii.gz")
+        image = nibabel.load(mri_file)
         self.img_idx = 0
     
         self.imgs= np.asarray(image.get_fdata())
@@ -84,6 +84,6 @@ class MriWidget(QWidget):
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img,w,h,pb,QImage.Format.Format_BGR888)))
 if __name__=="__main__":
     app = QApplication(sys.argv)
-    a = MriWidget()
+    a = MriWidget(mri_file="2400106729.nii.gz")
     a.show()
     sys.exit(app.exec())
