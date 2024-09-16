@@ -1,16 +1,20 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton,QFormLayout, QApplication, QVBoxLayout
+from PyQt6.QtCore import QTime
 from qtwidgets import PasswordEdit
 import sys
 from functools import partial
 import urllib3
 import json
 class RegisterView(QWidget):
-    def  __init__(self, parent=None):
+    def  __init__(self, parent=None, size=[1520,1000]):
         super(RegisterView,self).__init__(parent)
         self.total_layout = QVBoxLayout()
         self.setLayout(self.total_layout)
+        self.setFixedSize(*size)
+        self.setLayout(self.total_layout)
         self.create_form_layout(self.total_layout)
-
+        
+        
     def create_form_layout(self, parent):
         self.formWidget = QWidget()
 
@@ -38,13 +42,13 @@ class RegisterView(QWidget):
         self.formLayout.addRow(usernamelb, self.usernamele)
         
         passwordlb = QLabel("Password")
-        self.passwordle = PasswordEdit()
+        self.passwordle = QLineEdit()
         self.formLayout.addRow(passwordlb, self.passwordle)
-        self.passwordle.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
+        self.passwordle.setEchoMode(QLineEdit.EchoMode.Password)
 
         Cblb = QLabel("Confirm Password")
-        self.Cble = PasswordEdit()
-        self.Cble.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
+        self.Cble = QLineEdit()
+        self.Cble.setEchoMode(QLineEdit.EchoMode.Password)
         self.formLayout.addRow(Cblb, self.Cble)
 
         self.formWidget.setLayout(self.formLayout)
@@ -55,10 +59,11 @@ class RegisterView(QWidget):
         regbutton = QPushButton("Register")
         regbutton.clicked.connect(self._create_account)
         self.warninglb = QLabel()
-        rblayout.addWidget(regbutton)
-        rblayout.addWidget(self.warninglb)
-        rbwidget.setLayout(rblayout)
-        parent.addWidget(rbwidget)
+        # rblayout.addWidget(regbutton)
+        # rblayout.addWidget(self.warninglb)
+
+        parent.addWidget(regbutton)
+        parent.addWidget(self.warninglb)
 
     def __check_is_empty(self, text):
         """check a text is empty"""

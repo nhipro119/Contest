@@ -1,11 +1,17 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout,QFormLayout, QPushButton,QLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout,QFormLayout, QPushButton,QLayout, QApplication, QGridLayout
 import urllib3
 import json
+import sys
+# from widget import registerView
 class loginWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, size=[1420,1000]):
         super(loginWidget,self).__init__(parent=parent)
+        self.setFixedSize(*size)
         self.total_layout = QVBoxLayout()
-    def create_login_layout(self, parent):
+        self.setLayout(self.total_layout)
+        self.create_login_layout(self.total_layout)
+        self.create_login_button(self.total_layout)
+    def create_login_layout(self, parent:QLayout):
         paramWiget = QWidget()
         paramLayout = QFormLayout()
         username = QLabel("Username")
@@ -20,16 +26,27 @@ class loginWidget(QWidget):
     
     def create_login_button(self, parent:QLayout):
         loWidget = QWidget()
-        loLayout = QVBoxLayout()
+        # loWidget.setFixedSize(400,400)
+        loLayout = QGridLayout()
         loginbt = QPushButton(text="Login")
-        loLayout.addWidget(loginbt)
+        loLayout.addWidget(loginbt,0,0,1,1)
 
-        self.loginLb = QLabel()
-        loLayout.addWidget(self.loginLb)
+        register_bt = QPushButton(text="Register")
+        register_bt.setGeometry(300,0,200,50)
+        register_bt.clicked.connect(self.register_bt_event)
+        loLayout.addWidget(register_bt,0,1,1,1)
+
+        self.loginLb = QLabel("oke")
+        loLayout.addWidget(self.loginLb,1,0,1,2)
 
         loWidget.setLayout(loLayout)
 
         parent.addWidget(loWidget)
+
+    def register_bt_event(self):
+        self.hide()
+        self.parent().parent().create_register()
+
     
     def check_empty(self, text: str):
         if text.strip() == "":
@@ -49,7 +66,14 @@ class loginWidget(QWidget):
             token = res.data.decode("ascii")[1]
             with open("data/account.txt", "w") as f:
                 f.write(token)
+            self.parent().set_account(auth_id= token)
 
 
         
 
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = loginWidget()
+    window.show()
+    sys.exit(app.exec())

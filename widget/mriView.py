@@ -7,9 +7,9 @@ import numpy as np
 import cv2
 from functools import partial
 class MriWidget(QWidget):
-    def __init__(self, parent=None, mri_file=None):
+    def __init__(self, parent=None, mri_file=None,size=[1520,1000]):
         super(MriWidget,self).__init__(parent)
-        self.setFixedSize(800,800)
+        self.setFixedSize(*size)
         self.total_layout = QVBoxLayout(self)
         self.imgL = QLabel()
         
@@ -45,7 +45,6 @@ class MriWidget(QWidget):
             l_lb.append(QPushButton())
 
             # l_lb[ar].set_id(ar)
-            print(ar)
             img,w,h,BPL = self.get_image(self.imgs[:,:,ar],128,128)
             l_lb[ar].setIcon(QIcon(QPixmap.fromImage(QImage(img,w,h,BPL,QImage.Format.Format_RGB888))))
             l_lb[ar].setIconSize(QSize(128,128))
@@ -82,8 +81,3 @@ class MriWidget(QWidget):
                 self.img_idx += 1
         img, w,h,pb = self.get_image(self.imgs[:,:,self.img_idx])
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img,w,h,pb,QImage.Format.Format_BGR888)))
-if __name__=="__main__":
-    app = QApplication(sys.argv)
-    a = MriWidget(mri_file="2400106729.nii.gz")
-    a.show()
-    sys.exit(app.exec())
