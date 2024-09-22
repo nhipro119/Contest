@@ -14,6 +14,7 @@ class RegisterView(QWidget):
         self.setLayout(self.total_layout)
         self.create_form_layout(self.total_layout)
         
+        self.create_create_register_button(self.total_layout)
         
     def create_form_layout(self, parent):
         self.formWidget = QWidget()
@@ -122,27 +123,33 @@ class RegisterView(QWidget):
             return False
     
     def _create_account(self):
-        if not self.__check__valid_info():
+        if  self.__check__valid_info():
             self.warninglb.setText("your infomation is not correct")
             return False
         info = self.__get_info()
         http = urllib3.PoolManager()
-        res = http.request("POST","103.63.121.200:9011/register",body=json.dumps(info))
-        if res.status != 200:
+        res = http.request("POST","103.63.121.200:9011/register",body=json.dumps(info),headers={'Content-Type': 'application/json'})
+        if res.status == 400:
             self.warninglb.setText("account already exists")
             return False
-        else:
-            return True
+        elif res.status == 500:
+            self.warninglb.setText("system error")
+        elif res.status == 200:
+            self.login()
+            self.close()
     
     def login(self):
         param = {"username":self.usernamele.text(),
-                "password":self.passwordle.text()}
+                 "password":self.passwordle.text()}
         http = urllib3.PoolManager()
-        res = http.request("POST","103.63.121.200:9011/login",body = json.dumps(param))
-        if res.status == 200:
-            token = res.data.decode("ascii")[1]
-            with open("data/account.txt", "w") as f:
-                f.write(token)
+        res = http.request("POST","103.63.121.200:9011/login", body=json.dumps(param),headers={'Content-Type': 'application/json'})
+        if res.status != 200:
+            self.loginLb.setText("username or password is not correct")
+        else:
+
+            info_data = res.data.decode("ascii")
+
+            self.parent().parent().set_account(info_data)
 if __name__ =="__main__":
     app = QApplication(sys.argv)
     rv = RegisterView()

@@ -35,6 +35,7 @@ class Main(QMainWindow):
         # self.view_widget = QWidget(self.total_widget)
         # self.view_widget.setGeometry(400,0,1050,1080)
         self.auth_id = None
+        self.info = {"name":None, "mail":None, "phone":None}
 
 
     def create_menu_widget(self,parent):
@@ -45,8 +46,9 @@ class Main(QMainWindow):
 
         menu_layout = QVBoxLayout()
         menu_widget.setLayout(menu_layout)
-        # self.info_lb = QLabel("oke")
-        # menu_layout.addWidget(self.info_lb)
+        self.info_lb = QLabel("oke")
+        self.info_lb.setFixedSize(100,200)
+        menu_layout.addWidget(self.info_lb)
         inventory_bt = QPushButton("INVENTORY")
         menu_layout.addWidget(inventory_bt)
 
@@ -54,10 +56,10 @@ class Main(QMainWindow):
         patient_bt = QPushButton("PATIENT")
         menu_layout.addWidget(patient_bt)
         
-        login_bt = QPushButton("LOGIN")
-        login_bt.clicked.connect(self.login_bt_event)
+        self.login_bt = QPushButton("LOGIN")
+        self.login_bt.clicked.connect(self.login_bt_event)
 
-        menu_layout.addWidget(login_bt)
+        menu_layout.addWidget(self.login_bt)
         
         # parent.addWidget(menu_widget)
 
@@ -79,9 +81,30 @@ class Main(QMainWindow):
     # def login(self):
     #     login = loginView.loginWidget(parent=self)
         
-    def set_account(self, authid:str):
-        self.auth_id = authid
-        self.get_account_from_authid()
+    def set_account(self, info:str):
+        print(info)
+        info_data = json.loads(info)
+
+        with open("data/account.txt", "w") as f:
+            f.write(info)
+        
+        
+        self.auth_id = info_data["auth_id"]
+
+        self.set_info(info_data["info"])
+        try:
+            self.login_bt.setText("logout")
+            self.login_bt.clicked.disconnect()
+            self.login_bt.clicked.connect(self.logout_event)
+        except:
+            print("login button cant disconnect")
+
+    def logout_event(self):
+        self.auth_id = None
+        self.info_lb.setText("no loggin")
+        self.info = {"name":None, "mail":None, "phone":None}
+        with open("./data/account.txt", "w") as f:
+            f.write("")
 
     def get_account_from_authid(self):
         param = json.dumps({"authId":self.auth_id})
@@ -93,8 +116,10 @@ class Main(QMainWindow):
             self.set_info(data=dict_data)
 
     def set_info(self, data:dict):
-        self.info_lb.setText(data["Name"])    
-        
+        self.info_lb.setText(data["name"])    
+        self.info["phone"] = data["phone"]
+        self.info["mail"] = data["mail"]
+        self.info["name"] = data["name"]
 # if __name__ == "__main__":
 #     app = QApplication([])
 #     window = Window()

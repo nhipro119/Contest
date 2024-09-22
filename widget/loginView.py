@@ -29,6 +29,7 @@ class loginWidget(QWidget):
         # loWidget.setFixedSize(400,400)
         loLayout = QGridLayout()
         loginbt = QPushButton(text="Login")
+        loginbt.clicked.connect(self.login)
         loLayout.addWidget(loginbt,0,0,1,1)
 
         register_bt = QPushButton(text="Register")
@@ -58,15 +59,15 @@ class loginWidget(QWidget):
         param = {"username":self.usernameLe.text(),
                  "password":self.passwordLe.text()}
         http = urllib3.PoolManager()
-        res = http.request("POST","103.63.121.200:9011/login", body=json.dumps(param))
+        res = http.request("POST","103.63.121.200:9011/login", body=json.dumps(param),headers={'Content-Type': 'application/json'})
         if res.status != 200:
             self.loginLb.setText("username or password is not correct")
         else:
 
-            token = res.data.decode("ascii")[1]
-            with open("data/account.txt", "w") as f:
-                f.write(token)
-            self.parent().set_account(auth_id= token)
+            info_data = res.data.decode("ascii")
+            
+            self.parent().parent().set_account(info_data)
+            self.close()
 
 
         

@@ -6,6 +6,10 @@ import nibabel
 import numpy as np
 import cv2
 from functools import partial
+import urllib3
+import json
+import base64
+import os
 class MriWidget(QWidget):
     def __init__(self, parent=None, mri_file=None,size=[1520,1000]):
         super(MriWidget,self).__init__(parent)
@@ -16,8 +20,8 @@ class MriWidget(QWidget):
         b = QPushButton()
         b.setIconSize
         self.pixmap = QPixmap(512,512)
+        image = self.get_file_from_API(mri_file)
         
-        image = nibabel.load(mri_file)
         self.img_idx = 0
     
         self.imgs= np.asarray(image.get_fdata())
@@ -31,6 +35,25 @@ class MriWidget(QWidget):
         # self.total_layout.addChildWidget(self.imgL)
         self.list_image()
         self.setLayout(self.total_layout)
+    
+    def get_file_from_API(self, imageId):
+        http = urllib3.PoolManager()
+        param = {"imageID":imageId}
+        print("oke1")
+        rs = http.request("POST","103.63.121.200:9012/get_image",body=json.dumps(param), headers={'Content-Type': 'application/json'})
+        print("oke2")
+        if rs.status == 200:
+            print("oke")
+            data = rs.data.decode("ascii")
+            data = json.loads(data)["img_data"]
+            data = data.encode("ascii")
+            data = base64.b64decode(data)
+            with open(os.path.join(os.getcwd(),"data","input.nii.gz"), "wb") as f:
+                f.write(data)
+            image = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
+            print(type(image))
+            return image
+            
     
     def get_image(self,img, w=512,h=512):
         cv_img = img.astype(np.uint8)
@@ -81,3 +104,9 @@ class MriWidget(QWidget):
                 self.img_idx += 1
         img, w,h,pb = self.get_image(self.imgs[:,:,self.img_idx])
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img,w,h,pb,QImage.Format.Format_BGR888)))
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MriWidget(mri_file="2400106729.nii.gzMDkvMjAvMjAyNCwgMTg6Mjc6MzM=")
+    window.show()
+    sys.exit(app.exec())
