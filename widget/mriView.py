@@ -11,14 +11,15 @@ import json
 import base64
 import os
 class MriWidget(QWidget):
-    def __init__(self, parent=None, mri_file=None,size=[1520,1000]):
+    def __init__(self, parent=None, mri_file=None,size=[1520,1080]):
         super(MriWidget,self).__init__(parent)
-        self.setFixedSize(*size)
+        # self.setFixedSize(*size)
+        self.setGeometry(400,0,*size)
         # self.total_layout = QVBoxLayout(self)
         self.imgL = QLabel()
         
-        b = QPushButton()
-        b.setIconSize
+        b = QPushButton("predict", self)
+        b.setGeometry(0,0,100,100)
         # self.pixmap = QPixmap(512,512)
         image = self.get_file_from_API(mri_file)
         
@@ -27,8 +28,8 @@ class MriWidget(QWidget):
         self.imgs= np.asarray(image.get_fdata())
         self.max_idx = self.imgs.shape[2]
         self.image_view = QLabel(self)
-        self.image_view.setGeometry(500,200,1024,1024)
-        img1,w,h,p = self.get_image(self.imgs[:,:,0])
+        self.image_view.setGeometry(100,50,768,768)
+        img1,w,h,p = self.get_image(self.imgs[:,:,0],768,768)
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img1,w,h,p,QImage.Format.Format_RGB888)))
         # self.total_layout.addWidget(self.image_view)
         
@@ -36,9 +37,7 @@ class MriWidget(QWidget):
         # self.total_layout.addChildWidget(self.imgL)
         self.list_image()
         # self.setLayout(self.total_layout)
-    
-    def dislay_mri_file(self):
-        pass
+
     
     def get_file_from_API(self, imageId):
         http = urllib3.PoolManager()
@@ -56,15 +55,27 @@ class MriWidget(QWidget):
             return image
             
     
-    def get_image(self,img, w=51024,h=1024):
+    def get_image(self,img, w=1024,h=1024):
         cv_img = img.astype(np.uint8)
         frame = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
         frame = cv2.resize(frame,(w,h))
         bytesPerLine = 3 * w
         return frame, w,h,bytesPerLine
-    
+        
+    def process_data(self,predict:str):
+        img, w,h,p = self.get_image(self.imgs,512,512)
+        out_pre = nibabel.load(predict)
+        out_pre_img = out_pre.get_fdata()
+        for c in range(128):
+            img = out_pre_img[:,:,c]
+            for r in img:
+                pass
+
+    def dislay_mri_file(self):
+        pass
+
     def list_image(self):
-        qvbox = QHBoxLayout()
+        qvbox = QVBoxLayout()
         l_lb = []
         for ar in range(self.imgs.shape[2]):
             l_lb.append(QPushButton())
@@ -83,14 +94,14 @@ class MriWidget(QWidget):
             qvbox.addWidget(l_lb[ar])   
         
         self.lqwidget = QWidget()
-        # lqwidget.setFixedSize(150,500)  
+        # self.lqwidget.setFixedSize(200,1080)  
         self.lqwidget.setLayout(qvbox)
 
         scroll = QScrollArea(self)
-        scroll.setGeometry(0,750,1540,250)
+        scroll.setGeometry(1300,0,200,1080)
         # scroll.setWidgetResizable(True)
-        scroll.setFixedHeight(170)
-        scroll.setFixedWidth(780)
+        # scroll.setFixedHeight(170)
+        # scroll.setFixedWidth(780)
         scroll.setWidget(self.lqwidget)
         # self.total_layout.addWidget(scroll)
     

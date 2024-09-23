@@ -11,4 +11,4 @@ if __name__ == "__main__":
     window = mainView.Main()
     window.show()
     sys.exit(app.exec())
-
+    

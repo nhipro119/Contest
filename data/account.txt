@@ -1,0 +1,1 @@
+{"info": {"username": "chithien", "name": "thien", "phone": "1234567890", "mail": "ad@123"}, "auth_id": "Y2hpdGhpZW4yMDI0LTA5LTIzIDE2OjMzOjA4LjYzNTg3Mg=="}

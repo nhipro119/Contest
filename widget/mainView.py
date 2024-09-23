@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QWidget,QLayout
 )
-from widget import mriView, registerView, loginView
+from widget import mriView, registerView, loginView, inventoryView
 import urllib3
 import json
 from functools import partial
@@ -98,6 +98,8 @@ class Main(QMainWindow):
             self.login_bt.clicked.connect(self.logout_event)
         except:
             print("login button cant disconnect")
+        inventoryWidget = inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id)
+        inventoryWidget.show()
 
     def logout_event(self):
         self.auth_id = None

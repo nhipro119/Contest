@@ -3,10 +3,11 @@ from PyQt6.QtWidgets import QWidget, QTreeWidget, QTreeWidgetItem, QApplication,
 import sys
 import urllib3
 import json
-import mriView
+from widget import mriView
 class InventoryWidget(QWidget):
     def __init__(self, parent=None, auth_id= None):
         super(InventoryWidget, self).__init__(parent)
+        self.setGeometry(400,0,800,800)
         self.table = QTreeWidget(self)
         self.table.setGeometry(200,0,400,400)
         self.table = self.add_table_field(self.table)
