@@ -14,34 +14,36 @@ class MriWidget(QWidget):
     def __init__(self, parent=None, mri_file=None,size=[1520,1000]):
         super(MriWidget,self).__init__(parent)
         self.setFixedSize(*size)
-        self.total_layout = QVBoxLayout(self)
+        # self.total_layout = QVBoxLayout(self)
         self.imgL = QLabel()
         
         b = QPushButton()
         b.setIconSize
-        self.pixmap = QPixmap(512,512)
+        # self.pixmap = QPixmap(512,512)
         image = self.get_file_from_API(mri_file)
         
         self.img_idx = 0
-    
+
         self.imgs= np.asarray(image.get_fdata())
         self.max_idx = self.imgs.shape[2]
-        self.image_view = QLabel()
+        self.image_view = QLabel(self)
+        self.image_view.setGeometry(500,200,1024,1024)
         img1,w,h,p = self.get_image(self.imgs[:,:,0])
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img1,w,h,p,QImage.Format.Format_RGB888)))
-        self.total_layout.addWidget(self.image_view)
+        # self.total_layout.addWidget(self.image_view)
         
         # self.imgL.setPixmap(QPixmap.fromImage(qimage))
         # self.total_layout.addChildWidget(self.imgL)
         self.list_image()
-        self.setLayout(self.total_layout)
+        # self.setLayout(self.total_layout)
+    
+    def dislay_mri_file(self):
+        pass
     
     def get_file_from_API(self, imageId):
         http = urllib3.PoolManager()
         param = {"imageID":imageId}
-        print("oke1")
         rs = http.request("POST","103.63.121.200:9012/get_image",body=json.dumps(param), headers={'Content-Type': 'application/json'})
-        print("oke2")
         if rs.status == 200:
             print("oke")
             data = rs.data.decode("ascii")
@@ -51,16 +53,16 @@ class MriWidget(QWidget):
             with open(os.path.join(os.getcwd(),"data","input.nii.gz"), "wb") as f:
                 f.write(data)
             image = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
-            print(type(image))
             return image
             
     
-    def get_image(self,img, w=512,h=512):
+    def get_image(self,img, w=51024,h=1024):
         cv_img = img.astype(np.uint8)
         frame = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
         frame = cv2.resize(frame,(w,h))
         bytesPerLine = 3 * w
         return frame, w,h,bytesPerLine
+    
     def list_image(self):
         qvbox = QHBoxLayout()
         l_lb = []
@@ -84,17 +86,20 @@ class MriWidget(QWidget):
         # lqwidget.setFixedSize(150,500)  
         self.lqwidget.setLayout(qvbox)
 
-        scroll = QScrollArea()
+        scroll = QScrollArea(self)
+        scroll.setGeometry(0,750,1540,250)
         # scroll.setWidgetResizable(True)
         scroll.setFixedHeight(170)
         scroll.setFixedWidth(780)
         scroll.setWidget(self.lqwidget)
-        self.total_layout.addWidget(scroll)
+        # self.total_layout.addWidget(scroll)
+    
     def dislay_image_event(self,ar):
         img,w,h,pb = self.get_image(self.imgs[:,:,ar])
         self.img_idx = ar
         self.image_view.setPixmap(QPixmap.fromImage(QImage(img,w,h,pb,QImage.Format.Format_BGR888)))
 
+    
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_A: 
             if self.img_idx > 0:

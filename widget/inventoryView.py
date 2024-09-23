@@ -38,6 +38,9 @@ class InventoryWidget(QWidget):
             self.table.addTopLevelItem(item)
     
     def click_treeview_event(self):
+        mri = mriView.MriWidget(parent=self.parent(),mri_file=self.table.currentItem().IdName)
+        mri.show()
+        self.close()
         print(self.table.currentItem().IdName)
         
 class TreeItem(QTreeWidgetItem):
