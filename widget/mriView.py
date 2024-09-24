@@ -57,19 +57,61 @@ class MriWidget(QWidget):
     
     def get_image(self,img, w=1024,h=1024):
         cv_img = img.astype(np.uint8)
-        frame = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
+        if cv_img.shape[2] != 3:
+            frame = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
         frame = cv2.resize(frame,(w,h))
         bytesPerLine = 3 * w
         return frame, w,h,bytesPerLine
+    
+    def predict(self):
+        mri_data = open(os.path.join(os.getcwd(),"data","input.nii.gz"), "rb").read()
+        file_data = ("input.nii.gz",mri_data)
+        http =urllib3.PoolManager()
+        rs = http.request("POST","103.63.121.200:9010/predict",fields={"file":file_data})
+        if rs.status == 200:
+            rs_data = rs.data.decode("ascii")
+            dict_data = json.loads(rs_data)
+            file_data = dict_data["file"]
+            volume_data = dict_data["volume"]
+            file_data = file_data.encode("ascii")
+            file_data = base64.b64decode(file_data)
+            with open(os.path.join(os.getcwd(),"data","output.nii.gz"),"wb") as f:
+                f.write(file_data)
+        #     print(volume_data)
+        # print(rs.status)
         
     def process_data(self,predict:str):
-        img, w,h,p = self.get_image(self.imgs,512,512)
-        out_pre = nibabel.load(predict)
-        out_pre_img = out_pre.get_fdata()
-        for c in range(128):
-            img = out_pre_img[:,:,c]
-            for r in img:
-                pass
+        imgs = nibabel.load("output.nii.gz")
+        img = imgs.get_fdata()
+        # for i in range(128):
+        img = img * 255
+        img = img.astype(np.uint8)
+        in_imgs = nibabel.load("input.nii.gz")
+        in_img = in_img.get_fdata()
+        in_img = in_img.astype(np.uint8)
+        predict_frames = []
+        for i in range(128):
+            
+            frame = cv2.cvtColor(img[:,:,i], cv2.COLOR_GRAY2RGB)
+
+            r = frame[:,:,:1]
+            g = frame[:,:,1:2]
+            b = frame[:,:,2:]
+            r = np.where(r == 0, 1, 255)
+            g = np.where(g == 0, 1, 0)
+            b = np.where(b == 0, 1, 0)
+            frame = np.concatenate([r,g,b],axis=2)
+
+
+            
+
+
+
+            img64 = cv2.cvtColor(in_img[:,:,i], cv2.COLOR_GRAY2RGB)
+
+            total_img = img64 * frame
+            predict_frames.append(total_img)
+            self.imgs = predict_frames
 
     def dislay_mri_file(self):
         pass
