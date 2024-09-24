@@ -106,11 +106,11 @@
 # # res = http.request("POST","103.63.121.200:9012/upload",headers={'Content-Type': 'application/json'},body=param)
 # # print(res.data)
 
-# import nibabel
-# import matplotlib.pyplot as plt
-# import cv2
-# import numpy as np
-imgs = nibabel.load("240010729.nii.gz")
+import nibabel
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+imgs = nibabel.load("data\output.nii.gz")
 
 print(imgs)
 print(imgs.get_fdata().shape)
@@ -122,21 +122,23 @@ img = img.astype(np.uint8)
 # for i in range(128):
 #     for
 frame = cv2.cvtColor(img[:,:,64], cv2.COLOR_GRAY2RGB)
+print(frame)
 # frame = img[64]
 
 # frame[:,:,1:] = frame[:,:,1:] * 0
-r = frame[:,:,:1]
-g = frame[:,:,1:2]
-b = frame[:,:,2:]
-r = np.where(r == 0, 1, 255)
-g = np.where(g == 0, 1, 0)
-b = np.where(b == 0, 1, 0)
-frame = np.concatenate([r,g,b],axis=2)
+
+# r = frame[:,:,:1]
+# g = frame[:,:,1:2]
+# b = frame[:,:,2:]
+# r = np.where(r == 0, 1, 255)
+# g = np.where(g == 0, 1, 0)
+# b = np.where(b == 0, 1, 0)
+# frame = np.concatenate([r,g,b],axis=2)
 # frame = np.where(frame == [255,0,0], 1, 255)
 plt.imshow(frame)
 plt.show()
 
-in_img = nibabel.load("2400106729.nii.gz")
+in_img = nibabel.load("data\input.nii.gz")
 
 in_img = in_img.get_fdata()
 # in_img = in_img *255
@@ -145,28 +147,29 @@ in_img = in_img.astype(np.uint8)
 img64 = cv2.cvtColor(in_img[:,:,64], cv2.COLOR_GRAY2RGB)
 
 total_img = img64 * frame
-plt.imshow(total_img)
-plt.show()
-# cv2.imshow("img",frame)
-# cv2.waitkey()
-import urllib3
-import os
-import json
-import base64
-mri_data = open(os.path.join(os.getcwd(),"data","input.nii.gz"), "rb").read()
-# mri_data = base64.b64encode(mri_data)
-# mri_data = mri_data.decode("ascii")
-file_data = ("input.nii.gz",mri_data)
-http =urllib3.PoolManager()
-rs = http.request("POST","103.63.121.200:9010/predict",fields={"file":file_data})
-if rs.status == 200:
-    rs_data = rs.data.decode("ascii")
-    dict_data = json.loads(rs_data)
-    file_data = dict_data["file"]
-    volume_data = dict_data["volume"]
-    file_data = file_data.encode("ascii")
-    file_data = base64.b64decode(file_data)
-    with open(os.path.join(os.getcwd(),"data","output.nii.gz"),"wb") as f:
-        f.write(file_data)
-    print(volume_data)
-print(rs.status)
+
+# plt.imshow(total_img)
+# plt.show()
+cv2.imshow("img",frame)
+cv2.waitKey()
+# import urllib3
+# import os
+# import json
+# import base64
+# mri_data = open(os.path.join(os.getcwd(),"data","input.nii.gz"), "rb").read()
+# # mri_data = base64.b64encode(mri_data)
+# # mri_data = mri_data.decode("ascii")
+# file_data = ("input.nii.gz",mri_data)
+# http =urllib3.PoolManager()
+# rs = http.request("POST","103.63.121.200:9010/predict",fields={"file":file_data})
+# if rs.status == 200:
+#     rs_data = rs.data.decode("ascii")
+#     dict_data = json.loads(rs_data)
+#     file_data = dict_data["file"]
+#     volume_data = dict_data["volume"]
+#     file_data = file_data.encode("ascii")
+#     file_data = base64.b64decode(file_data)
+#     with open(os.path.join(os.getcwd(),"data","output.nii.gz"),"wb") as f:
+#         f.write(file_data)
+#     print(volume_data)
+# print(rs.status)
