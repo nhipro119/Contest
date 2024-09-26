@@ -23,6 +23,7 @@ class InventoryWidget(QWidget):
         param = json.dumps({"authID":auth_id})
         http = urllib3.PoolManager()
         rs = http.request("POST","103.63.121.200:9012/inventory", body=param,headers={'Content-Type': 'application/json'})
+        print(rs.status)
         if rs.status == 200:
             data = rs.data.decode("ascii")
             data = json.loads(data)

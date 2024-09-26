@@ -17,6 +17,7 @@ from widget import mriView, registerView, loginView, inventoryView
 import urllib3
 import json
 from functools import partial
+import os
 class Main(QMainWindow):
     def __init__(self):
         super().__init__(parent=None)
@@ -36,10 +37,12 @@ class Main(QMainWindow):
         # self.view_widget.setGeometry(400,0,1050,1080)
         self.auth_id = None
         self.info = {"name":None, "mail":None, "phone":None}
+        self.__login_when_init()
 
 
     def create_menu_widget(self,parent):
         menu_widget = QWidget(parent)
+        menu_widget.setStyleSheet("border: 1px solid;border-radius: 5px; border-color:black;")
         menu_widget.setGeometry(0,0,400,1080)
         menu_widget.setFixedWidth(400)
         
@@ -50,18 +53,62 @@ class Main(QMainWindow):
         self.info_lb.setFixedSize(100,200)
         menu_layout.addWidget(self.info_lb)
         inventory_bt = QPushButton("INVENTORY")
+        inventory_bt.setFixedSize(350,100)
+        inventory_bt.setStyleSheet("border: 1px solid; border-color:black;border-radius: 5px; background-color:green;")
+        inventory_bt.clicked.connect(self.open_inventory_event)
         menu_layout.addWidget(inventory_bt)
 
 
-        patient_bt = QPushButton("PATIENT")
-        menu_layout.addWidget(patient_bt)
+        # patient_bt = QPushButton("PATIENT")
+        # menu_layout.addWidget(patient_bt)
         
         self.login_bt = QPushButton("LOGIN")
+        self.login_bt.setStyleSheet("  background-color: #04AA6D;\
+                                        color: white;\
+                                        padding: 14px 20px;\
+                                        margin: 8px 0;\
+                                        border: none;\
+                                        cursor: pointer;\
+                                        width: 100%;")
         self.login_bt.clicked.connect(self.login_bt_event)
 
         menu_layout.addWidget(self.login_bt)
         
         # parent.addWidget(menu_widget)
+    def open_inventory_event(self):
+        inventoryWidget = inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id)
+        inventoryWidget.show()
+    def __login_when_init(self):
+        self.root_path = os.getcwd()
+        if(not os.path.exists(os.path.join(self.root_path,"data"))):
+            os.mkdir(os.path.join(self.root_path,"data"))
+            with open(os.path.join(self.root_path,"data","account.bin"),"wb") as f:
+                f.write("")
+            self.login_bt_event()
+        elif not os.path.exists(os.path.join(self.root_path,"data","account.bin")):
+            self.login_bt_event()
+        else:
+            if self.read_account_txt():
+                self.open_inventory_event()
+            else:
+                self.login_bt_event()
+    def read_account_txt(self):
+        with open(os.path.join(self.root_path,"data","account.bin"),"rb") as f:
+            data = f.read()
+        data = data.decode("utf-8")
+        try:
+            data = json.loads(data)
+        except:
+            return False
+        self.auth_id = data["auth_id"]
+        account_info = data["info"]
+        self.info["name"] = account_info["name"]
+        self.info["mail"] = account_info["mail"]
+        self.info["phone"] = account_info["phone"]
+        self.info_lb.setText(account_info["name"])
+        self.set_logout()
+        return True
+        
 
     def login_bt_event(self):
         self.login_widget = loginView.loginWidget(self.total_widget)
@@ -84,29 +131,30 @@ class Main(QMainWindow):
     def set_account(self, info:str):
         print(info)
         info_data = json.loads(info)
-
-        with open("data/account.txt", "w") as f:
-            f.write(info)
+        info_data_encode = info.encode("utf-8")
+        with open("data/account.bin", "wb") as f:
+            f.write(info_data_encode)
         
         
         self.auth_id = info_data["auth_id"]
 
         self.set_info(info_data["info"])
+        self.open_inventory_event()
+    def set_logout(self):
         try:
             self.login_bt.setText("logout")
             self.login_bt.clicked.disconnect()
             self.login_bt.clicked.connect(self.logout_event)
         except:
             print("login button cant disconnect")
-        inventoryWidget = inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id)
-        inventoryWidget.show()
-
+        
     def logout_event(self):
         self.auth_id = None
         self.info_lb.setText("no loggin")
         self.info = {"name":None, "mail":None, "phone":None}
-        with open("./data/account.txt", "w") as f:
-            f.write("")
+        
+        with open("./data/account.bin", "wb") as f:
+            f.write("".encode("utf-8"))
 
     def get_account_from_authid(self):
         param = json.dumps({"authId":self.auth_id})

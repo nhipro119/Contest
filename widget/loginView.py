@@ -9,40 +9,60 @@ class loginWidget(QWidget):
         self.setFixedSize(*size)
         self.total_layout = QVBoxLayout()
         self.setLayout(self.total_layout)
-        self.create_login_layout(self.total_layout)
+        self.create_login_layout()
         self.create_login_button(self.total_layout)
-    def create_login_layout(self, parent:QLayout):
-        paramWiget = QWidget()
-        paramLayout = QFormLayout()
-        username = QLabel("Username")
-        self.usernameLe = QLineEdit()
-        paramLayout.addRow(username,self.usernameLe)
+    def create_login_layout(self):
+        welcome_lb = QLabel(self)
+        welcome_lb.setGeometry(460,197,700,45)
+        welcome_lb.setText("WELCOME BACK!")
+        welcome_lb.setStyleSheet("font-family: Lexend;\
+                                font-size: 45px;\
+                                font-weight: 700;\
+                                line-height: 56.25px;\
+                                text-align: left;\
+                                ")
+        self.usernameLe = QLineEdit(self)
+        self.usernameLe.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black;border-radius: 30px;")
+        self.usernameLe.setGeometry(460,352,520,62)
 
-        pwLb = QLabel("Password")
-        self.passwordLe = QLineEdit()
-        paramLayout.addRow(pwLb, self.passwordLe)
-        paramWiget.setLayout(paramLayout)
-        parent.addWidget(paramWiget)
+        self.usernameLe.setPlaceholderText("Username")
+
+
+
+        self.passwordLe = QLineEdit(self)
+        self.passwordLe.setPlaceholderText("Password")
+        self.passwordLe.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black;border-radius: 30px;")
+        self.passwordLe.setGeometry(460,438,520,62)
+
     
     def create_login_button(self, parent:QLayout):
         loWidget = QWidget()
         # loWidget.setFixedSize(400,400)
         loLayout = QGridLayout()
-        loginbt = QPushButton(text="Login")
+        loginbt = QPushButton("Login",self)
+        loginbt.setGeometry(570,634,300,62)
+        loginbt.setStyleSheet("background-color: #48CFCB; border: 1px solid; border-color:black;border-radius: 30px;")
         loginbt.clicked.connect(self.login)
-        loLayout.addWidget(loginbt,0,0,1,1)
+        # loLayout.addWidget(loginbt,0,0,1,1)
 
-        register_bt = QPushButton(text="Register")
-        register_bt.setGeometry(300,0,200,50)
+        register_bt = QPushButton("Register your account",self)
+        register_bt.setGeometry(460,263,300,41)
+        register_bt.setStyleSheet("font-family: Lexend;\
+                                    font-size: 20px;\
+                                    font-weight: 700;\
+                                    line-height: 25px;\
+                                    text-align: left;\
+                                    border: none;\
+                                    ")
         register_bt.clicked.connect(self.register_bt_event)
         loLayout.addWidget(register_bt,0,1,1,1)
 
         self.loginLb = QLabel("oke")
         loLayout.addWidget(self.loginLb,1,0,1,2)
 
-        loWidget.setLayout(loLayout)
+        # loWidget.setLayout(loLayout)
 
-        parent.addWidget(loWidget)
+        # parent.addWidget(loWidget)
 
     def register_bt_event(self):
         self.hide()
