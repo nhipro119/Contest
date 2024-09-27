@@ -1,63 +1,86 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton,QFormLayout, QApplication, QVBoxLayout
 from PyQt6.QtCore import QTime
-from qtwidgets import PasswordEdit
+
 import sys
 from functools import partial
 import urllib3
 import json
+import passwordLineEdit
 class RegisterView(QWidget):
     def  __init__(self, parent=None, size=[1520,1000]):
         super(RegisterView,self).__init__(parent)
         self.total_layout = QVBoxLayout()
-        self.setLayout(self.total_layout)
+
         self.setFixedSize(*size)
-        self.setLayout(self.total_layout)
-        self.create_form_layout(self.total_layout)
+
+        self.create_form_layout()
         
         self.create_create_register_button(self.total_layout)
         
-    def create_form_layout(self, parent):
-        self.formWidget = QWidget()
-
-        self.formLayout = QFormLayout()
+    def create_form_layout(self):
         
-        Namelb = QLabel("Name")
-        self.Namele = QLineEdit()
-        self.formLayout.addRow(Namelb,self.Namele)
+        create_account_label = QLabel("Create account",parent=self)
+        create_account_label.setGeometry(460,197,360,66)
+        create_account_label.setStyleSheet("font-family: Lexend;\
+                                            font-size: 45px;\
+                                            font-weight: 700;\
+                                            line-height: 56.25px;\
+                                            text-align: left;\
+                                            ")
+        
+
+        self.Namele = QLineEdit(self)
+        self.Namele.setGeometry(483,375,485,40)
+        self.Namele.setPlaceholderText("Name")
+        self.Namele.setStyleSheet("background-color:#D9D9D9;   border: 1px solid; border-color:black;border-radius: 12px;")
+        # self.formLayout.addRow(Namelb,self.Namele)
         self.Namele.textChanged.connect(partial(self.__warning,self.Namele))
 
-        PhoneLb = QLabel("Phone")
-        self.PhoneLe = QLineEdit()
-        self.formLayout.addRow(PhoneLb,self.PhoneLe)
+        self.PhoneLe = QLineEdit(self)
+        self.PhoneLe.setGeometry(483,449,485,40)
+        self.PhoneLe.setStyleSheet("background-color:#D9D9D9;   border: 1px solid; border-color:black;border-radius: 12px;")
+        self.PhoneLe.setPlaceholderText("Phone")
         self.PhoneLe.textChanged.connect(partial(self.__warning,self.PhoneLe))
 
-        MailLb = QLabel("Mail")
-        self.MailLe = QLineEdit()
-        self.formLayout.addRow(MailLb,self.MailLe)
+
+        self.MailLe = QLineEdit(self)
+        self.MailLe.setStyleSheet("background-color:#D9D9D9;   border: 1px solid; border-color:black;border-radius: 12px;")
+        self.MailLe.setGeometry(483,527,485,40)
+        self.PhoneLe.setPlaceholderText("Mail")
         self.MailLe.textChanged.connect(partial(self.__warning,self.MailLe))
 
-        usernamelb = QLabel("User Name")
-        self.usernamele = QLineEdit()
+
+        self.usernamele = QLineEdit(self)
+        self.usernamele.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black; border-radius: 12px;")
+        self.usernamele.setGeometry(483,605,485,40)
+        self.usernamele.setPlaceholderText("Username")
         self.usernamele.textChanged.connect(partial(self.__warning,self.usernamele))
         
-        self.formLayout.addRow(usernamelb, self.usernamele)
         
-        passwordlb = QLabel("Password")
-        self.passwordle = QLineEdit()
-        self.formLayout.addRow(passwordlb, self.passwordle)
+        self.passwordle = QLineEdit(self)
+        self.passwordle.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black; border-radius: 12px;")
+        self.passwordle.setGeometry(483,690,485,40)
+        self.passwordle.setPlaceholderText("Password")
+        # self.formLayout.addRow(passwordlb, self.passwordle)
         self.passwordle.setEchoMode(QLineEdit.EchoMode.Password)
 
         Cblb = QLabel("Confirm Password")
-        self.Cble = QLineEdit()
+        self.Cble = QLineEdit(self)
+        self.Cble.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black; border-radius: 12px;")
+        self.Cble.setPlaceholderText("Confirm Password")
+        self.Cble.setGeometry(483,775, 485,40)
         self.Cble.setEchoMode(QLineEdit.EchoMode.Password)
-        self.formLayout.addRow(Cblb, self.Cble)
+        
 
-        self.formWidget.setLayout(self.formLayout)
-        parent.addWidget(self.formWidget)
+
+        # self.formWidget.setLayout(self.formLayout)
+        # parent.addWidget(self.formWidget)
     def create_create_register_button(self,parent):
         rbwidget = QWidget()
         rblayout = QVBoxLayout()
-        regbutton = QPushButton("Register")
+        regbutton = QPushButton("Register",parent=self)
+        regbutton.setStyleSheet("background-color: #48CFCB; border: 1px solid; border-color:black;border-radius: 30px;")
+        regbutton.setGeometry(569,860,300,62)
         regbutton.clicked.connect(self._create_account)
         self.warninglb = QLabel()
         # rblayout.addWidget(regbutton)
@@ -104,9 +127,9 @@ class RegisterView(QWidget):
     def __warning(self, le):
         """warning when type content under 2 character"""
         if len(le.text()) <=2:
-            le.setStyleSheet("border: 1px solid red;")
+            le.setStyleSheet("background-color:#D9D9D9;   border-radius: 12px; border-color: red;")
         else:
-            le.setStyleSheet("border: 1px solid black;")    
+            le.setStyleSheet("background-color:#D9D9D9;   border-radius: 12px;")    
     
     def __get_info(self):
         info = {"username":self.usernamele.text(),
