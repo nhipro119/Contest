@@ -64,6 +64,7 @@ class MriWidget(QWidget):
         http = urllib3.PoolManager()
         param = {"imageID":imageId}
         rs = http.request("POST","103.63.121.200:9012/get_image",body=json.dumps(param), headers={'Content-Type': 'application/json'})
+        print(rs.status)
         if rs.status == 200:
             print("oke")
             data = rs.data.decode("ascii")

@@ -5,7 +5,7 @@ import sys
 from functools import partial
 import urllib3
 import json
-import passwordLineEdit
+# import passwordLineEdit
 class RegisterView(QWidget):
     def  __init__(self, parent=None, size=[1520,1000]):
         super(RegisterView,self).__init__(parent)
@@ -20,7 +20,7 @@ class RegisterView(QWidget):
     def create_form_layout(self):
         
         create_account_label = QLabel("Create account",parent=self)
-        create_account_label.setGeometry(460,197,360,66)
+        create_account_label.setGeometry(550,197,360,66)
         create_account_label.setStyleSheet("font-family: Lexend;\
                                             font-size: 45px;\
                                             font-weight: 700;\

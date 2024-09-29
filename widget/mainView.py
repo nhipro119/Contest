@@ -11,8 +11,10 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QPushButton,
-    QWidget,QLayout
+    QWidget,QLayout,
+    QFileDialog,QMessageBox
 )
+
 from widget import mriView, registerView, loginView, inventoryView
 import urllib3
 import json
@@ -28,7 +30,9 @@ class Main(QMainWindow):
         width = mornitor.width
         self.setMinimumSize(width,height)
         self.showMaximized()
+        self.notice_label = QMessageBox()
         self.total_widget = QWidget()
+        # self.mainView = None
         # self.total_layout =  QHBoxLayout()
         # self.total_widget.setLayout(self.total_layout)
         self.setCentralWidget(self.total_widget)
@@ -59,8 +63,16 @@ class Main(QMainWindow):
         menu_layout.addWidget(inventory_bt)
 
 
-        # patient_bt = QPushButton("PATIENT")
-        # menu_layout.addWidget(patient_bt)
+        upload_bt = QPushButton("UPLOAD")
+        upload_bt.setStyleSheet("  background-color: #04AA6D;\
+                                        color: white;\
+                                        padding: 14px 20px;\
+                                        margin: 8px 0;\
+                                        border: none;\
+                                        cursor: pointer;\
+                                        width: 100%;")
+        upload_bt.clicked.connect(self.upload_file)
+        menu_layout.addWidget(upload_bt)
         
         self.login_bt = QPushButton("LOGIN")
         self.login_bt.setStyleSheet("  background-color: #04AA6D;\
@@ -75,6 +87,29 @@ class Main(QMainWindow):
         menu_layout.addWidget(self.login_bt)
         
         # parent.addWidget(menu_widget)
+    def set_notice(self,title=None,text=None, icon=None):
+        print("oke")
+        self.notice_label.setWindowTitle(title)
+        self.notice_label.setText(text)
+        self.notice_label.setIcon(icon)
+        bt = self.notice_label.exec()
+        if bt == QMessageBox.StandardButton.Ok:
+            self.notice_label.hide()
+        
+
+
+    def upload_file(self):
+        # self.notice_label.setText(" not login yet")
+        if self.auth_id == None:
+            self.set_notice(title="warning", text="not login yet",icon=QMessageBox.Icon.Critical)
+            return
+        root = os.getcwd()
+        path = QFileDialog.getOpenFileName(None, 'Select nii file', root,"(*.nii.gz)")
+        path = path[0]
+        if ".nii.gz" not in path.split("/")[-1]:
+            self.set_notice(title="warning", text="this file isn't ni.gz file",icon=QMessageBox.Icon.Critical)
+        http = urllib3.PoolManager()
+        http.request("POST","103.63.121.200:9012/upload")
     def open_inventory_event(self):
         inventoryWidget = inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id)
         inventoryWidget.show()
