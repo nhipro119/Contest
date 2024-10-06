@@ -1,7 +1,8 @@
 import sys
-from PyQt6.QtWidgets import QWidget, QHBoxLayout,QApplication, QLabel,QVBoxLayout, QScrollArea, QPushButton
-from PyQt6.QtGui import QImage,QPixmap,QIcon
+from PyQt6.QtWidgets import QWidget, QHBoxLayout,QApplication, QLabel,QVBoxLayout, QScrollArea, QPushButton, QProgressBar
+from PyQt6.QtGui import QImage,QPixmap,QIcon, QMovie
 from PyQt6.QtCore import QSize,Qt
+
 import nibabel
 import numpy as np
 import cv2
@@ -10,51 +11,103 @@ import urllib3
 import json
 import base64
 import os
+import asyncio
+import threading
+import time
 class MriWidget(QWidget):
-    def __init__(self, parent=None, mri_file=None,size=[1520,1080]):
+    def __init__(self, parent=None, patientID=None,size=[1520,1080], patient_name=None):
         super(MriWidget,self).__init__(parent)
-        # self.setFixedSize(*size)
+
         self.setGeometry(400,0,*size)
-        # self.total_layout = QVBoxLayout(self)
-        self.imgL = QLabel()
 
+        
+        self.lb = QLabel(parent=self)
+        
+        self.lb.setText("CT SCAN")
+        self.lb.setStyleSheet("color:white;\
+                              font-family: Lexend;\
+                                            font-size: 48px;\
+                                            font-weight: bold;\
+                                            ")
+        self.lb.move(49,22)
+        self.lb.adjustSize()
         self.image_view = QLabel(self)
-        self.image_view.setGeometry(100,50,768,768)
+        
+        
+        self.icon_lb = QLabel(self)
+        self.icon_lb.setGeometry(75,90,200,200)
+        self.icon_lb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/User.png")))
+        
+        self.name_lb = QLabel(text=patient_name,parent=self,wordWrap=True)
+        self.name_lb.setStyleSheet("font-size:26px; font-weight:bold;color:white;")
+        # self.name_lb.adjustSize()
+        # self.name_lb.move(75,286)
+        self.name_lb.setGeometry(75,286,200,100)
 
-        predict_bt = QPushButton("predict", self)
+        self.predict_bt = QPushButton("Dự đoán", self)
+        self.predict_bt.setStyleSheet("color:#31363F; background-color:#76ABAE;font-size: 30px;color:white;")
 
-        predict_bt.setGeometry(0,0,100,100)
-        predict_bt.clicked.connect(self.predict_event)
+        self.predict_bt.setGeometry(95,950,189,55)
+        self.predict_bt.clicked.connect(self.predict_event)
         # self.pixmap = QPixmap(512,512)
         
-        self.img_size = (768,768)
-        self.img_idx = 0
-
-        self.imgs, self.max_idx = self.__get_image(mri_file=mri_file)
+        self.create_predict_widget()
         
+        self.img_size = (870,870)
+        self.img_idx = 0
+        self.image_view.setGeometry(400,109,*self.img_size)
+        
+        self.prog_bar = QProgressBar(self)
+        self.prog_bar.setGeometry(400,89,870,20)
+        self.prog_bar.setStyleSheet("color:black;")
+        self.prog_bar.hide()
+        
+        
+        self.list_img_layout = QVBoxLayout()
+        for i in range(1000):
+            bt = QPushButton()
+            bt.setFixedSize(128,128)
+            self.list_img_layout.addWidget(bt)
+        
+        self.scrol = QScrollArea(self)
+        self.scrol.setGeometry(1270,0,200,1080)
+        temp_wg = QWidget()
+        temp_wg.setLayout(self.list_img_layout)
+        temp_wg.setFixedWidth(200)
+        self.scrol.setWidget(temp_wg)
+        
+        self.show()
+        
+        self.load_widget = Loadwidget(self, text="Đang tải ảnh")
+        self.load_widget.setGeometry(400,0,800,400)
+        self.load_widget.show()
+
+
+        self.thr = threading.Thread(target=self.__dislay_when_init,args=(patientID,),daemon=True)
+
+        self.thr.start()
+        # self.thr.join()
+        
+
+
+    
+    
+    def __dislay_when_init(self, mri_file):
+        self.imgs, self.max_idx = self.__get_image(mri_file=mri_file)
+ 
         self.imgs = self.__image_proccessing(self.imgs,*self.img_size)
         
         self.__dislay_img_on_imgview(self.imgs[0],*self.img_size)
         
-        self.scrol = QScrollArea(self)
-        self.scrol.setGeometry(1300,0,200,1080)
-        
-        # scroll.setWidgetResizable(True)
-        # scroll.setFixedHeight(170)
-        # scroll.setFixedWidth(780)
-        
-        # self.total_layout.addWidget(self.image_view)
-        
-        # self.imgL.setPixmap(QPixmap.fromImage(qimage))
-        # self.total_layout.addChildWidget(self.imgL)
         self.list_image(self.imgs)
-        # self.setLayout(self.total_layout)
-
     def __get_image(self,mri_file:str):
-        image = self.get_file_from_API(mri_file)
-        imgs= np.asarray(image.get_fdata())
-        max_idx = imgs.shape[2]
-        return imgs, max_idx
+
+        stat, image = self.get_file_from_API(mri_file)
+        if stat == True:
+            self.load_widget.close()
+            imgs= np.asarray(image.get_fdata())
+            max_idx = imgs.shape[2]
+            return imgs, max_idx
     
     def __dislay_img_on_imgview(self,img,w,h):
         p = w*3
@@ -62,8 +115,8 @@ class MriWidget(QWidget):
 
     def get_file_from_API(self, imageId):
         http = urllib3.PoolManager()
-        param = {"imageID":imageId}
-        rs = http.request("POST","103.63.121.200:9012/get_image",body=json.dumps(param), headers={'Content-Type': 'application/json'})
+        param = {"patientID":imageId}
+        rs = http.request("POST","103.63.121.200:9012/get_image_with_patientID",body=json.dumps(param), headers={'Content-Type': 'application/json'})
         print(rs.status)
         if rs.status == 200:
             print("oke")
@@ -74,7 +127,7 @@ class MriWidget(QWidget):
             with open(os.path.join(os.getcwd(),"data","input.nii.gz"), "wb") as f:
                 f.write(data)
             image = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
-            return image
+            return True, image
             
     
     def __image_proccessing(self,imgs, w=1024,h=1024):
@@ -88,12 +141,33 @@ class MriWidget(QWidget):
         return proccessed_img
     
     def predict_event(self):
+
+
+        predict_thread = threading.Thread(target=self.predict_process,daemon=True)
+        predict_thread.start()
+        show_thr = threading.Thread(target=self.show_progress, daemon=True)
+        show_thr.start() 
+        
+    def show_progress(self):
+        # self.predict_bt.hide()
+        # self.prog_bar.show()
+        # for i in range(20):
+        #     self.prog_bar.setValue(i*5)
+        #     time.sleep(1)
+        self.load_widget.predict("Đang dự đoán")
+        # self.load_widget.setGeometry(400,0,800,400)
+        self.load_widget.show()
+
+        # print(rs.status)
+    def predict_process(self):
+        print("oke oke")
         mri_data = open(os.path.join(os.getcwd(),"data","input.nii.gz"), "rb").read()
         file_data = ("input.nii.gz",mri_data)
         http =urllib3.PoolManager()
         rs = http.request("POST","103.63.121.200:9010/predict",fields={"file":file_data})
         if rs.status == 200:
             print("predict")
+            
             rs_data = rs.data.decode("ascii")
             dict_data = json.loads(rs_data)
             file_data = dict_data["file"]
@@ -106,15 +180,56 @@ class MriWidget(QWidget):
             
             self.__dislay_img_on_imgview(self.imgs[0],*self.img_size)
             self.list_image(self.imgs)
-        #     print(volume_data)
-        # print(rs.status)
+            # self.predict_bt.setText("Predict Volume is : {}".format(volume_data))
+            # self.predict_bt.setStyleSheet("color:black; background-color:green;font-size: 30px;")
+            self.predict_bt.setDisabled(True)
+            # self.volume_label  = QLabel(self)
+            # self.volume_label.setText(volume_data)
+            # self.volume_label.setGeometry()
+            # self.load_widget.close()
+            # self.predict_bt.show()
+            self.load_widget.hide()
+            self.dislay_volume(volume=volume_data)
+    def create_predict_widget(self):
+        self.volume_lb = QWidget(parent=self)
+        self.volume_lb.setGeometry(30,396,340,278)
+        self.volume_lb.setStyleSheet("border:3px solid; border-radius:20px; border-color:#FFFFFF;background-color:#222831;")
+        self.volume_lb.hide()
+        
+        self.lb = QLabel(text="Thể tích máu tụ \ndự đoán ",parent=self, alignment=Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignTop)
+        self.lb.setGeometry(85,409,340,110)
+        self.lb.setWordWrap(True)
+        self.lb.setStyleSheet("color:#76ABAE;border:none;font-size:30px;")
+        self.lb.adjustSize()
+        self.lb.hide()
+        
+        self.vlb = QLabel(parent=self)
+        # self.vlb.setText(volume)
+        self.vlb.setStyleSheet("font-size:64px; font-weight:bold; color:#EA0107; border:none;background-color:#222831;")
+        self.vlb.move(115,493)
+        self.vlb.hide()
+        
+        
+        self.mmlb = QLabel(parent=self)
+        self.mmlb.setGeometry(180,570,82,44)
+        self.mmlb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/mm.png")))
+        self.mmlb.setStyleSheet("background-color:#222831;")
+        self.mmlb.hide()
+    
+    def dislay_volume(self,volume):
+        self.volume_lb.show()
+        self.lb.show()
+        self.vlb.setText(volume)
+        self.vlb.adjustSize()
+        self.vlb.show()
+        self.mmlb.show()        
         
     def process_predict_data(self):
         
         imgs = nibabel.load(os.path.join(os.getcwd(),"data","output.nii.gz"))
-        # imgs = nibabel.load("240010729.nii.gz")
+
         img = imgs.get_fdata()
-        # for i in range(128):
+
         img = img * 255
         img = img.astype(np.uint8)
         in_imgs = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
@@ -141,37 +256,21 @@ class MriWidget(QWidget):
     # def dislay_mri_file(self,images,w,h):
         # img1,w,h,p = self.get_image(self.imgs[0],w,h)
     def list_image(self, imgs):
-
-
         
-        
-        # self.lqwidget.setLayout(layout)
-        
-        
-        
-        # layout = self.lqwidget.layout()
-        # layout = self.remove_widget(layout)
-        layout = QVBoxLayout()
-
-        l_lb = []
         w,h = 128,128
         BPL = w*3
         for ar in range(len(imgs)):
-            l_lb.append(QPushButton())
+            bt = self.list_img_layout.itemAt(ar).widget()
             img = cv2.resize(imgs[ar],(w,h))
-            l_lb[ar].setIcon(QIcon(QPixmap.fromImage(QImage(img,w,h,BPL,QImage.Format.Format_RGB888))))
-            l_lb[ar].setIconSize(QSize(128,128))
-            l_lb[ar].setStyleSheet("QPushButton { border: none; }")
+            bt.setIcon(QIcon(QPixmap.fromImage(QImage(img,w,h,BPL,QImage.Format.Format_RGB888))))
+            bt.setIconSize(QSize(128,128))
+            bt.setStyleSheet("QPushButton { border: none; }")
             
-            l_lb[ar].clicked.connect(partial(self.dislay_image_event,imgs,ar))
+            bt.clicked.connect(partial(self.dislay_image_event,imgs,ar))
 
-            layout.addWidget(l_lb[ar]) 
+            # layout.addWidget(l_lb[ar]) 
         
-        lqwidget = QWidget()
-        lqwidget.setLayout(layout)
 
-        
-        self.scrol.setWidget(lqwidget)
 
 
     
@@ -187,12 +286,37 @@ class MriWidget(QWidget):
         if event.key() == Qt.Key.Key_A: 
             if self.img_idx > 0:
                 self.img_idx -= 1
+                w,h = self.img_size
+                self.__dislay_img_on_imgview(self.imgs[self.img_idx],w,h)
         elif event.key() == Qt.Key.Key_D:
             if self.img_idx < self.max_idx -1:
                 self.img_idx += 1
-        w,h = self.img_size
-        self.__dislay_img_on_imgview(self.imgs[self.img_idx],w,h)
+                w,h = self.img_size
+                self.__dislay_img_on_imgview(self.imgs[self.img_idx],w,h)
+  
 
+class Loadwidget(QWidget):
+    def __init__(self, parent=None,text=None):
+        super(Loadwidget, self).__init__(parent=parent)
+        self.load_icon = QLabel(self)
+        self.load_icon.setGeometry(0,0,100,100)
+        movie = QMovie(os.path.join(os.getcwd(),"icon","loading.gif"))
+        self.load_icon.setMovie(movie)
+        movie.start()
+        self.text = QLabel(self)
+        self.text.setGeometry(110,25,500,50)
+        self.text.setText(text)
+        self.text.setStyleSheet("font-family: Lexend;\
+                                            font-size: 45px;\
+                                            font-weight: 700;\
+                                            line-height: 56.25px;\
+                                            text-align: left;\
+                                            color:white;\
+                                            ")
+    def predict(self, text=None):
+        self.text.setText(text)
+        self.text.adjustSize()
+        # self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MriWidget(mri_file="2400106729.nii.gzMDkvMjAvMjAyNCwgMTg6Mjc6MzM=")

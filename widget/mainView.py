@@ -14,20 +14,24 @@ from PyQt6.QtWidgets import (
     QWidget,QLayout,
     QFileDialog,QMessageBox
 )
-
-from widget import mriView, registerView, loginView, inventoryView
+from PyQt6.QtGui import QPixmap, QImage, QIcon
+from PyQt6.QtCore import QSize, Qt
+import asyncio
+from widget import mriView, registerView, loginView, inventoryView,patientView
 import urllib3
 import json
 from functools import partial
 import os
+import base64
 class Main(QMainWindow):
     def __init__(self):
         super().__init__(parent=None)
         self.setWindowTitle("QMainWindow")
-        # self.setCentralWidget(QLabel("I'm the Central Widget"))
+        self.setStyleSheet("background-color:#222831")
         mornitor = get_monitors()[0]
         height = mornitor.height
         width = mornitor.width
+        # self.setGeometry(0,0,1920,1080)
         self.setMinimumSize(width,height)
         self.showMaximized()
         self.notice_label = QMessageBox()
@@ -40,79 +44,104 @@ class Main(QMainWindow):
         # self.view_widget = QWidget(self.total_widget)
         # self.view_widget.setGeometry(400,0,1050,1080)
         self.auth_id = None
+        self.mainview = loginView.loginWidget()
         self.info = {"name":None, "mail":None, "phone":None}
+        self.thread_daemon = None
         self.__login_when_init()
 
 
+    def set_mainview(self,widget:QWidget, geometry=[507,0,1420,1080]):
+        self.mainview.close()
+        self.mainview = widget
+        self.mainview.setGeometry(*geometry)
+        self.mainview.show()
+        
     def create_menu_widget(self,parent):
         menu_widget = QWidget(parent)
-        menu_widget.setStyleSheet("border: 1px solid;border-radius: 5px; border-color:black;")
-        menu_widget.setGeometry(0,0,400,1080)
-        menu_widget.setFixedWidth(400)
-        
+        menu_widget.setStyleSheet(" background-color:#31363F")
+        menu_widget.setGeometry(0,0,506,1070)
 
-        menu_layout = QVBoxLayout()
-        menu_widget.setLayout(menu_layout)
-        self.info_lb = QLabel("oke")
-        self.info_lb.setFixedSize(100,200)
-        menu_layout.addWidget(self.info_lb)
-        inventory_bt = QPushButton("INVENTORY")
-        inventory_bt.setFixedSize(350,100)
-        inventory_bt.setStyleSheet("border: 1px solid; border-color:black;border-radius: 5px; background-color:green;")
+        
+        welcome_lb = QLabel(menu_widget)
+        welcome_lb.setGeometry(34,27,195,48)
+        welcome_lb.setText("Xin chào,")
+        welcome_lb.setStyleSheet("font-size:40px;font-weight: bold;background-color:#31363F; color:white;")
+        
+        self.icon_lb = QLabel(menu_widget)
+        self.icon_lb.setGeometry(326,10,130,130)
+        
+        self.info_lb = QLabel(text="", parent=self,alignment=Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
+        self.info_lb.setGeometry(34,90,250,100)
+        self.info_lb.setWordWrap(True)
+        
+        self.info_lb.setStyleSheet("font-size:36px; background-color:#31363F; color:white;")
+        
+        inventory_bt = QPushButton(icon=QIcon(os.path.join(os.getcwd(),"icon/Archive.png")),text="Danh Sách",parent=menu_widget)
+        inventory_bt.setIconSize(QSize(70,70))
+        inventory_bt.setGeometry(0,253,506,95)
+        inventory_bt.setStyleSheet("border: 3px solid; border-color:#222831;\
+                                    font-size:48px;\
+                                    font-weight:bold; background-color:#5C8085;color:white;")
         inventory_bt.clicked.connect(self.open_inventory_event)
-        menu_layout.addWidget(inventory_bt)
 
 
-        upload_bt = QPushButton("UPLOAD")
-        upload_bt.setStyleSheet("  background-color: #04AA6D;\
-                                        color: white;\
-                                        padding: 14px 20px;\
-                                        margin: 8px 0;\
-                                        border: none;\
-                                        cursor: pointer;\
-                                        width: 100%;")
-        upload_bt.clicked.connect(self.upload_file)
-        menu_layout.addWidget(upload_bt)
+
         
-        self.login_bt = QPushButton("LOGIN")
-        self.login_bt.setStyleSheet("  background-color: #04AA6D;\
+        upload_bt = QPushButton(icon=QIcon(os.path.join(os.getcwd(),"icon/UserCirclePlus.png")),text="Thêm Bệnh Nhân",parent=menu_widget)
+        upload_bt.setIconSize(QSize(70,70))
+        upload_bt.setStyleSheet("  background-color: #31363F;\
                                         color: white;\
-                                        padding: 14px 20px;\
-                                        margin: 8px 0;\
+                                            border: 3px solid; border-color:#222831;\
+                                        font-size:48px;font-weight:bold;\
+                                        width: 100%;")
+        upload_bt.clicked.connect(self.open_upload_patient_view)
+        upload_bt.setGeometry(0,348,506,95)
+        # menu_layout.addWidget(upload_bt)
+        
+        self.login_bt = QPushButton(text="Đăng xuất",parent=menu_widget)
+        
+        self.login_bt.setStyleSheet("  background-color: #1E1E1E;\
+                                        color: white;\
                                         border: none;\
                                         cursor: pointer;\
+                                    font-family: Inter;\
+                                    font-size: 30px;\
+                                    font-style: normal;\
+                                    font-weight: 700;\
+                                    line-height: normal;\
                                         width: 100%;")
         self.login_bt.clicked.connect(self.login_bt_event)
-
-        menu_layout.addWidget(self.login_bt)
+        self.login_bt.setGeometry(0,950,506,81)
+        # menu_layout.addWidget(self.login_bt)
         
         # parent.addWidget(menu_widget)
+        
+    
     def set_notice(self,title=None,text=None, icon=None):
-        print("oke")
         self.notice_label.setWindowTitle(title)
+        # self.notice_label.move(400,800)
         self.notice_label.setText(text)
         self.notice_label.setIcon(icon)
-        bt = self.notice_label.exec()
+        bt = self.notice_label.show()
         if bt == QMessageBox.StandardButton.Ok:
             self.notice_label.hide()
         
 
 
-    def upload_file(self):
-        # self.notice_label.setText(" not login yet")
-        if self.auth_id == None:
-            self.set_notice(title="warning", text="not login yet",icon=QMessageBox.Icon.Critical)
-            return
-        root = os.getcwd()
-        path = QFileDialog.getOpenFileName(None, 'Select nii file', root,"(*.nii.gz)")
-        path = path[0]
-        if ".nii.gz" not in path.split("/")[-1]:
-            self.set_notice(title="warning", text="this file isn't ni.gz file",icon=QMessageBox.Icon.Critical)
-        http = urllib3.PoolManager()
-        http.request("POST","103.63.121.200:9012/upload")
+    
+
+    
+
+            
+
+    
+    def open_upload_patient_view(self):
+        self.set_mainview(patientView.PatientWidget(parent=self))
+        
     def open_inventory_event(self):
-        inventoryWidget = inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id)
-        inventoryWidget.show()
+        self.set_mainview(inventoryView.InventoryWidget(parent=self,auth_id=self.auth_id))
+
+        
     def __login_when_init(self):
         self.root_path = os.getcwd()
         if(not os.path.exists(os.path.join(self.root_path,"data"))):
@@ -135,27 +164,28 @@ class Main(QMainWindow):
             data = json.loads(data)
         except:
             return False
+        print(data)
         self.auth_id = data["auth_id"]
         account_info = data["info"]
-        self.info["name"] = account_info["name"]
-        self.info["mail"] = account_info["mail"]
-        self.info["phone"] = account_info["phone"]
-        self.info_lb.setText(account_info["name"])
+        self.set_info(account_info)
+
         self.set_logout()
         return True
         
 
     def login_bt_event(self):
-        self.login_widget = loginView.loginWidget(self.total_widget)
-        self.login_widget.setGeometry(400,0,800,800)
-        self.login_widget.show()
+        self.set_mainview(loginView.loginWidget(self), geometry=[0,0,1920,1080])
+        # login_widget = 
+        # login_widget.setGeometry(400,0,800,800)
+        # login_widget.show()
         # self.login_widget.setGeometry(400,0,800,800)
     
     def create_register(self):
-        self.regView = registerView.RegisterView(self.total_widget)
-        self.regView.setGeometry(400,0,800,800)
+        self.set_mainview(registerView.RegisterView(self),geometry=[0,0,1920,1080])
+        # self.regView = 
+        # self.regView.setGeometry(400,0,800,800)
         
-        self.regView.show()
+        # self.regView.show()
         
     # def create_main_widget(self,parent:QLayout, widget:QWidget):
     #     parent.addWidget(widget)
@@ -183,6 +213,7 @@ class Main(QMainWindow):
         except:
             print("login button cant disconnect")
         
+
     def logout_event(self):
         self.auth_id = None
         self.info_lb.setText("no loggin")
@@ -190,6 +221,9 @@ class Main(QMainWindow):
         
         with open("./data/account.bin", "wb") as f:
             f.write("".encode("utf-8"))
+        # self.icon_lb.clear()
+        self.login_bt_event()
+        # self.icon_lb.setText()
 
     def get_account_from_authid(self):
         param = json.dumps({"authId":self.auth_id})
@@ -200,11 +234,16 @@ class Main(QMainWindow):
             dict_data = json.loads(data)
             self.set_info(data=dict_data)
 
+
     def set_info(self, data:dict):
+
         self.info_lb.setText(data["name"])    
+        self.info_lb.show()
         self.info["phone"] = data["phone"]
         self.info["mail"] = data["mail"]
         self.info["name"] = data["name"]
+        self.icon_lb.setStyleSheet("background-color:#31363F")
+        self.icon_lb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon","UserCircle.png")))
 # if __name__ == "__main__":
 #     app = QApplication([])
 #     window = Window()

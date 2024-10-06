@@ -1,58 +1,85 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout,QFormLayout, QPushButton,QLayout, QApplication, QGridLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout,QFormLayout, QPushButton,QLayout, QApplication, QGridLayout, QMessageBox
+from PyQt6.QtGui import QPixmap, QWindow
 import urllib3
 import json
 import sys
+import os
 # from widget import registerView
 class loginWidget(QWidget):
     def __init__(self, parent=None, size=[1420,1000]):
         super(loginWidget,self).__init__(parent=parent)
-        self.setFixedSize(*size)
-        self.total_layout = QVBoxLayout()
-        self.setLayout(self.total_layout)
+
+        self.setGeometry(0,0,1920,1080)
+        # .format(
+        
+        self.setAutoFillBackground(True)
+        bglb = QLabel(self)
+        bglb.setFixedSize(1920,1080)
+        bglb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/Login.jpg")))
+        # style = "QWidget{background-image: url({})}"
+        # self.setStyleSheet(style)
+        
+
         self.create_login_layout()
-        self.create_login_button(self.total_layout)
+        self.create_login_button()
     def create_login_layout(self):
+        
         welcome_lb = QLabel(self)
-        welcome_lb.setGeometry(460,197,700,45)
-        welcome_lb.setText("WELCOME BACK!")
+        welcome_lb.move(614,146)
+        welcome_lb.setText("Xin chào")
         welcome_lb.setStyleSheet("font-family: Lexend;\
-                                font-size: 45px;\
-                                font-weight: 700;\
-                                line-height: 56.25px;\
-                                text-align: left;\
-                                ")
+                                font-size: 96px;\
+                                font-weight: bold;\
+                                background-color: transparent;color:white;")
+        lyalb = QLabel(parent=self,text="Đăng nhập vào tài khoản của bạn")
+        lyalb.setStyleSheet("font-size:40px; color:white;")
+        lyalb.setGeometry(628,262,600,48)
+        welcome_lb.adjustSize()
+        email = QLabel(parent=self,text="Tên đăng nhập")
+        email.setStyleSheet("color:white;font-size:40px")
+        email.move(628,373)
+        email.adjustSize()
         self.usernameLe = QLineEdit(self)
-        self.usernameLe.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black;border-radius: 30px;")
-        self.usernameLe.setGeometry(460,352,520,62)
+        self.usernameLe.setStyleSheet("color:white; border: 2px solid; border-color:white;border-radius: 10px;background-color: transparent;font-size:30px;")
+        self.usernameLe.setGeometry(628,442,677,77)
 
-        self.usernameLe.setPlaceholderText("Username")
+        self.usernameLe.setPlaceholderText("Nhập tên đăng nhập")
 
 
-
+        password = QLabel(parent=self, text="Mật khẩu")
+        password.setStyleSheet("color:white;font-size:40px")
+        password.move(628,540)
+        password.adjustSize()
+        
         self.passwordLe = QLineEdit(self)
-        self.passwordLe.setPlaceholderText("Password")
-        self.passwordLe.setStyleSheet("background-color:#D9D9D9; border: 1px solid; border-color:black;border-radius: 30px;")
-        self.passwordLe.setGeometry(460,438,520,62)
+        self.passwordLe.setPlaceholderText("Nhập mật khẩu")
+        self.passwordLe.setStyleSheet("color:white; border: 2px solid; border-color:white;border-radius: 10px;background-color: transparent;font-size:30px;")
+        self.passwordLe.setEchoMode(QLineEdit.EchoMode.Password)
+        self.passwordLe.setGeometry(628,609,677,77)
 
     
-    def create_login_button(self, parent:QLayout):
-        loWidget = QWidget()
+    def create_login_button(self):
+
         # loWidget.setFixedSize(400,400)
         loLayout = QGridLayout()
-        loginbt = QPushButton("Login",self)
-        loginbt.setGeometry(570,634,300,62)
-        loginbt.setStyleSheet("background-color: #48CFCB; border: 1px solid; border-color:black;border-radius: 30px;")
+        loginbt = QPushButton("Đăng nhập",self)
+        loginbt.setGeometry(628,776,677,55)
+        loginbt.setStyleSheet("background-color: #76ABAE; border: none; border-color:black;border-radius: 10px;color:#31363F; font-size:25px")
         loginbt.clicked.connect(self.login)
         # loLayout.addWidget(loginbt,0,0,1,1)
+        
+        
+        daclb = QLabel(parent=self,text="Chưa có tài khoản?")
+        daclb.setStyleSheet("background-color: transparent; color:white; font-size:24px;")
+        daclb.setGeometry(864,865,268,29)
 
-        register_bt = QPushButton("Register your account",self)
-        register_bt.setGeometry(460,263,300,41)
+        register_bt = QPushButton("Đăng ký tại đây",self)
+        register_bt.setGeometry(1129,865,200,29)
         register_bt.setStyleSheet("font-family: Lexend;\
-                                    font-size: 20px;\
-                                    font-weight: 700;\
-                                    line-height: 25px;\
+                                    font-size: 24px;\
                                     text-align: left;\
                                     border: none;\
+                                    color:#76ABAE;background-color: transparent;\
                                     ")
         register_bt.clicked.connect(self.register_bt_event)
         loLayout.addWidget(register_bt,0,1,1,1)
@@ -66,7 +93,7 @@ class loginWidget(QWidget):
 
     def register_bt_event(self):
         self.hide()
-        self.parent().parent().create_register()
+        self.parent().create_register()
 
     
     def check_empty(self, text: str):
@@ -75,18 +102,18 @@ class loginWidget(QWidget):
         return True
     def login(self):
         if  not (self.check_empty(self.usernameLe.text()) and self.check_empty(self.passwordLe.text())):
-            self.loginLb.setText("username or password is empty")
+            self.parent().set_notice(title="Error", text="Tên đăng nhập hoặc mật khẩu không được để trống", icon = QMessageBox.Icon.Critical)
         param = {"username":self.usernameLe.text(),
                  "password":self.passwordLe.text()}
         http = urllib3.PoolManager()
         res = http.request("POST","103.63.121.200:9011/login", body=json.dumps(param),headers={'Content-Type': 'application/json'})
         if res.status != 200:
-            self.loginLb.setText("username or password is not correct")
+            self.parent().set_notice(title="Error", text="Tên đăng nhập hoặc mật khẩu không đúng", icon = QMessageBox.Icon.Critical)
         else:
 
             info_data = res.data.decode("ascii")
             
-            self.parent().parent().set_account(info_data)
+            self.parent().set_account(info_data)
             self.close()
 
 
