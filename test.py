@@ -1,14 +1,53 @@
-# import dicom2nifti
-# import dicom2nifti.convert_dir
-# import dicom2nifti.settings as settings
+import nibabel
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+imgs = nibabel.load("D:\\QT_project\\CT_SCAN\\Contest\\data\\output.nii.gz")
 
-# settings.disable_validate_orthogonal()
-# settings.enable_resampling()
-# settings.set_resample_spline_interpolation_order(1)
-# settings.set_resample_padding(-1000)
-# dicom2nifti.dicom_series_to_nifti("dicom/1.2.840.113619.2.491.3.2831158058.263.1703843748.299.4","nifti/ex.nii.gz")
-# import dicom2nifti
-# import json
-# a = json.dumps([1,2,3,4,5])
-# b = json.loads(a)
-# print(type(b))
+pixdim = imgs.header["pixdim"][1:4]
+pixdim = pixdim[0]*pixdim[1]*pixdim[2]
+
+imgs = imgs.get_fdata()
+
+
+num_p = np.count_nonzero(imgs)
+print(num_p*pixdim/1000)
+img64 = imgs[:,:,64]
+img64 = img64.astype(np.uint8)
+# img64 *=255
+ret, labels = cv2.connectedComponents(img64)
+full_imgs = []
+
+imgs = imgs.astype(np.uint8)
+
+for i in range(128):
+    area = []
+    img = imgs[:,:,i]
+    ret, labels = cv2.connectedComponents(img)
+    for lb in range(1,ret):
+        area.append(np.count_nonzero(labels == lb))
+    full_imgs.append(area)
+
+print(full_imgs)
+# label_hue = np.uint8(179 * labels / np.max(labels))
+# blank_ch = 255 * np.ones_like(label_hue)
+# labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+# labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
+# labeled_img[label_hue == 0] = 0
+# plt.subplot(222)
+# plt.title('Objects counted:'+ str(ret-1))
+# plt.imshow(labels)
+# print('objects number is:', ret-1)
+# plt.show()
+# print("max lb",np.max(labels))
+# area = []
+# for lb in range(1,ret):
+#     area.append(np.count_nonzero(labels == lb))
+# print(area)
+# print(len(area))
+# print(ret)
+# print(ret, labels.shape)
+# cv2.imshow("img",img64)
+# cv2.waitKey()
+# plt.imshow(imgs[:,:,64])
+# plt.show()
