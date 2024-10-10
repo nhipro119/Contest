@@ -8,22 +8,40 @@ pixdim = imgs.header["pixdim"][1:4]
 pixdim = pixdim[0]*pixdim[1]*pixdim[2]
 
 imgs = imgs.get_fdata()
-img64 = imgs[:,:,38]
-img64  = img64.astype(np.uint8)
+for i in range(128):
 
-# img64 = cv2.bitwise_not(img64)
-img64 = np.where(img64 == 1, 0, 1)
+    img64 = imgs[:,:,i]
+    img64  = img64.astype(np.uint8)
 
-plt.imshow(img64)
-plt.show()
-in_img = in_imgs.get_fdata()[:,:,38]
-in_img = in_img*img64
-in_img *= 255
-in_img = in_img.astype(np.uint8)
-in_img = cv2.cvtColor(in_img, cv2.COLOR_GRAY2BGR)
-plt.imshow(in_img)
-plt.show()
+    # img64 = cv2.bitwise_not(img64)
+    img64 = np.where(img64 == 1, 0, 1)
 
+    # plt.imshow(img64)
+    # plt.show()
+    in_img = in_imgs.get_fdata()[:,:,i]
+    in_img = in_img*img64
+    in_img *= 255
+    in_img = in_img.astype(np.uint8)
+    in_img = cv2.cvtColor(in_img, cv2.COLOR_GRAY2BGR)
+    # plt.imshow(in_img)
+    # plt.show()
+    img64 = imgs[:,:,i]
+    img64  = img64.astype(np.uint8)
+    img64 = img64*255
+    ret, labels = cv2.connectedComponents(img64)
+    # area ={}
+    # for lb in range(1,ret):
+    #     area[lb] = np.count_nonzero(labels == lb)
+
+    label_hue = np.uint8(179 * labels / np.max(labels))
+    blank_ch = 255 * np.ones_like(label_hue)
+    labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+    labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
+    labeled_img[label_hue == 0] = 0
+    labeled_img = labeled_img + in_img
+    plt.imshow(labeled_img)
+    # print('objects number is:', ret-1)
+    plt.show()
 # num_p = np.count_nonzero(imgs)
 # print(num_p*pixdim/1000)
 # img64 = imgs[:,:,64]
@@ -59,15 +77,7 @@ plt.show()
 # full_volume = np.sum(img_np,axis=0)
 # print(full_volume)
 # print(sum(full_volume)*pixdim)
-img64 = imgs[:,:,38]
-img64  = img64.astype(np.uint8)
-img64 = img64*255
-ret, labels = cv2.connectedComponents(img64)
-label_hue = np.uint8(179 * labels / np.max(labels))
-blank_ch = 255 * np.ones_like(label_hue)
-labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
-labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
-labeled_img[label_hue == 0] = 0
+
 
 # plt.subplot(222)
 # plt.title('Objects counted:'+ str(ret-1))

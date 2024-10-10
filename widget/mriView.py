@@ -228,29 +228,59 @@ class MriWidget(QWidget):
         
         imgs = nibabel.load(os.path.join(os.getcwd(),"data","output.nii.gz"))
 
-        img = imgs.get_fdata()
+        imgs = imgs.get_fdata()
 
-        img = img * 255
-        img = img.astype(np.uint8)
+        # imgs = imgs * 255
+        imgs = imgs.astype(np.uint8)
         in_imgs = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
-        in_img = in_imgs.get_fdata()
-        in_img = in_img.astype(np.uint8)
+        in_imgs = in_imgs.get_fdata()
+        in_imgs = in_imgs.astype(np.uint8)
         predict_frames = []
         for i in range(128):
             
-            frame = cv2.cvtColor(img[:,:,i], cv2.COLOR_GRAY2RGB)
-            frame[np.where((frame!=[0, 0, 0]).all(axis=2))] = [255,0,0]
-            frame[np.where((frame==[0,0,0]).all(axis=2))] = [1,1,1]
+            img64 = imgs[:,:,i]
 
-            img64 = cv2.cvtColor(in_img[:,:,i], cv2.COLOR_GRAY2RGB)
+            img64 = np.where(img64 == 1, 0, 1)
+            in_img = in_imgs[:,:,i]
+            # in_img *= 255
+            # 
+            in_img = np.multiply(in_img,img64)
+            in_img = np.clip(in_img,0,255)
+            in_img = in_img.astype(np.uint8)
+            
+            in_img = cv2.cvtColor(in_img, cv2.COLOR_GRAY2RGB)
+            
+            img64 = imgs[:,:,i]
+            img64  = img64.astype(np.uint8)
+            img64 = img64*255
+            ret, labels = cv2.connectedComponents(img64)
+            label_hue = np.uint8(179 * labels / np.max(labels))
+            blank_ch = 255 * np.ones_like(label_hue)
+            labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+            labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2RGB)
+            labeled_img[label_hue == 0] = 0
+            labeled_img =  in_img+labeled_img
+            labeled_img = cv2.resize(labeled_img, self.img_size)
+            predict_frames.append(labeled_img)
 
-            total_img = img64 * frame
+
+
+
+        # for i in range(128):
             
-            total_img = np.clip(total_img,0,255)
-            total_img = cv2.resize(total_img,self.img_size)
-            predict_frames.append(total_img)
+        #     frame = cv2.cvtColor(imgs[:,:,i], cv2.COLOR_GRAY2RGB)
+        #     frame[np.where((frame!=[0, 0, 0]).all(axis=2))] = [255,0,0]
+        #     frame[np.where((frame==[0,0,0]).all(axis=2))] = [1,1,1]
+
+        #     img64 = cv2.cvtColor(in_imgs[:,:,i], cv2.COLOR_GRAY2RGB)
+
+        #     total_img = img64 * frame
             
-        print(len(predict_frames))
+        #     total_img = np.clip(total_img,0,255)
+        #     total_img = cv2.resize(total_img,self.img_size)
+        #     predict_frames.append(total_img)
+            
+        # print(len(predict_frames))
         return predict_frames
 
     # def dislay_mri_file(self,images,w,h):
