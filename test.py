@@ -8,6 +8,7 @@ pixdim = imgs.header["pixdim"][1:4]
 pixdim = pixdim[0]*pixdim[1]*pixdim[2]
 
 imgs = imgs.get_fdata()
+areas = []
 for i in range(128):
 
     img64 = imgs[:,:,i]
