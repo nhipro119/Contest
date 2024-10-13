@@ -14,6 +14,7 @@ import os
 import asyncio
 import threading
 import time
+import matplotlib.pyplot as plt
 class MriWidget(QWidget):
     def __init__(self, parent=None, patientID=None,size=[1520,1080], patient_name=None):
         super(MriWidget,self).__init__(parent)
@@ -64,6 +65,7 @@ class MriWidget(QWidget):
         
         
         self.list_img_layout = QVBoxLayout()
+    
         for i in range(1000):
             bt = QPushButton()
             bt.setFixedSize(128,128)
@@ -192,7 +194,7 @@ class MriWidget(QWidget):
             self.dislay_volume(volume=volume_data)
     def create_predict_widget(self):
         self.volume_lb = QWidget(parent=self)
-        self.volume_lb.setGeometry(30,396,340,278)
+        self.volume_lb.setGeometry(30,396,340,500)
         self.volume_lb.setStyleSheet("border:3px solid; border-radius:20px; border-color:#FFFFFF;background-color:#222831;")
         self.volume_lb.hide()
         
@@ -205,17 +207,36 @@ class MriWidget(QWidget):
         
         self.vlb = QLabel(parent=self)
         # self.vlb.setText(volume)
-        self.vlb.setStyleSheet("font-size:64px; font-weight:bold; color:#EA0107; border:none;background-color:#222831;")
-        self.vlb.move(115,493)
+        self.vlb.setStyleSheet("font-size:40px; font-weight:bold; color:#EA0107; border:none;background-color:#222831;")
+        self.vlb.move(50,493)
         self.vlb.hide()
         
         
         self.mmlb = QLabel(parent=self)
-        self.mmlb.setGeometry(180,570,82,44)
+        self.mmlb.setGeometry(200,493,82,44)
         self.mmlb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/mm.png")))
         self.mmlb.setStyleSheet("background-color:#222831;")
         self.mmlb.hide()
-    
+
+        self.svllo = QVBoxLayout()
+        self.vllbs = []
+        svlwg = QWidget()
+        for i in range(100):
+            vlwg = VolumeClassWidget(svlwg)
+            vlwg.setStyleSheet("border-color: white;")
+            self.svllo.addWidget(vlwg)
+            self.vllbs.append(vlwg)
+        
+        svlwg.setLayout(self.svllo)
+        self.svla = QScrollArea(self)
+        self.svla.setGeometry(35,570,330,300)
+        self.svla.setWidget(svlwg)
+        self.svla.verticalScrollBar().hide()
+        self.svla.horizontalScrollBar().hide()
+        self.svla.setStyleSheet("border:None;")
+        # self.svla.show()
+        
+
     def dislay_volume(self,volume):
         self.volume_lb.show()
         self.lb.show()
@@ -226,46 +247,150 @@ class MriWidget(QWidget):
         
     def process_predict_data(self):
         
-        imgs = nibabel.load(os.path.join(os.getcwd(),"data","output.nii.gz"))
+        out_imgs = nibabel.load(os.path.join(os.getcwd(),"data","output.nii.gz"))
 
-        imgs = imgs.get_fdata()
+        pixdim = out_imgs.header["pixdim"][1:4]
+        self.pixdim = pixdim[0]*pixdim[1]*pixdim[2]
 
-        # imgs = imgs * 255
-        imgs = imgs.astype(np.uint8)
+        
+        out_imgs = out_imgs.get_fdata()
+        out_imgs = out_imgs.astype(np.uint8)
+        out_imgs *= 255
+
         in_imgs = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
         in_imgs = in_imgs.get_fdata()
         in_imgs = in_imgs.astype(np.uint8)
+
+
+        
+        areas = []
+        num_area = 1
+        pi = 3.14156
+        labeled_imgs = []
         predict_frames = []
         for i in range(128):
+        # print("hinh",i,":",end=" ")
+            ret, labels = cv2.connectedComponents(out_imgs[:,:,i])
+            # new_area = np.where(labels == 1)
             
-            img64 = imgs[:,:,i]
+            # print(new_area)
+            
+            new_areas = []
+            area_each_image = {}
+            for dem1 in range(len(areas)):
+                areas[dem1].discontinous()
+            for r in range(1,ret):
+                check_overlap = False
+                new_area = np.where(labels == r)
+                new_area = new_area[0]+pi*new_area[1]
+                new_area = new_area.tolist()
+                
+                for idx,ar in enumerate(areas):
+                    overlap = set(ar.ar).intersection(set(new_area))
+                    if len(overlap) > 0:
+                        areas[idx].translate_area(new_area)
+                        check_overlap = True
+                        area_each_image[r] = areas[idx].area_idx
 
-            img64 = np.where(img64 == 1, 0, 1)
+                        break
+                    
+                        # areas[idx].discontinous()
+                    
+                if not check_overlap:
+                    
+                    new_areas.append([new_area,r])
+
+                
+
+            for dem2 in range(len(areas)):
+                if not areas[dem2].continous:
+                    areas[dem2].ar = []
+            for new_area in new_areas:
+                areas.append(Area(new_area[0],num_area))
+                area_each_image[new_area[1]] = num_area
+                num_area += 1
+            zero = np.zeros(shape=labels.shape)
+            for aai in area_each_image.keys():
+
+                print("anh co vung ", aai, " thuoc area ",area_each_image[aai])
+                temp = np.where(labels == aai, area_each_image[aai],0)
+                zero = zero + temp
+            labeled_imgs.append(zero)
+            # for aai in area_each_image.keys():
+            #     labels = np.where(labels == aai, area_each_image[aai],labels)
+            # labeled_imgs.append(labels)
+
+
+        for i in range(len(labeled_imgs)):
+            print(np.max(np.asarray(labeled_imgs)))
+            label_hue = np.uint8(179 * labeled_imgs[i] / np.max(np.asarray(labeled_imgs)))
+            blank_ch = 255 * np.ones_like(label_hue)
+            labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+            
+            labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2RGB)
+            labeled_img[label_hue == 0] = 0
+            img64 = out_imgs[:,:,i]
+
+            img64 = np.where(img64 == 255, 0, 1)
             in_img = in_imgs[:,:,i]
             # in_img *= 255
             # 
             in_img = np.multiply(in_img,img64)
-            in_img = np.clip(in_img,0,255)
             in_img = in_img.astype(np.uint8)
             
             in_img = cv2.cvtColor(in_img, cv2.COLOR_GRAY2RGB)
             
-            img64 = imgs[:,:,i]
-            img64  = img64.astype(np.uint8)
-            img64 = img64*255
-            ret, labels = cv2.connectedComponents(img64)
-            label_hue = np.uint8(179 * labels / np.max(labels))
-            blank_ch = 255 * np.ones_like(label_hue)
-            labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
-            labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2RGB)
-            labeled_img[label_hue == 0] = 0
+            # img64 = out_imgs[:,:,i]
+            # img64  = img64.astype(np.uint8)
+            # img64 = img64*255
             labeled_img =  in_img+labeled_img
             labeled_img = cv2.resize(labeled_img, self.img_size)
             predict_frames.append(labeled_img)
+        areas.sort(reverse = True, key = key)
+        for i in range(min(len(areas),100)):
+            self.vllbs[i].set_value(areas[i].area_idx, areas[i].NOP*self.pixdim/1000, len(areas))
 
 
 
+#############IMG 2 ####################################
+        # imgs = imgs.get_fdata()
 
+        # # imgs = imgs * 255
+        # imgs = imgs.astype(np.uint8)
+        # in_imgs = nibabel.load(os.path.join(os.getcwd(),"data","input.nii.gz"))
+        # in_imgs = in_imgs.get_fdata()
+        # in_imgs = in_imgs.astype(np.uint8)
+        # predict_frames = []
+        # for i in range(128):
+            
+        #     img64 = imgs[:,:,i]
+
+        #     img64 = np.where(img64 == 1, 0, 1)
+        #     in_img = in_imgs[:,:,i]
+        #     # in_img *= 255
+        #     # 
+        #     in_img = np.multiply(in_img,img64)
+        #     in_img = np.clip(in_img,0,255)
+        #     in_img = in_img.astype(np.uint8)
+            
+        #     in_img = cv2.cvtColor(in_img, cv2.COLOR_GRAY2RGB)
+            
+        #     img64 = imgs[:,:,i]
+        #     img64  = img64.astype(np.uint8)
+        #     img64 = img64*255
+        #     ret, labels = cv2.connectedComponents(img64)
+        #     label_hue = np.uint8(179 * labels / np.max(labels))
+        #     blank_ch = 255 * np.ones_like(label_hue)
+        #     labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+        #     labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2RGB)
+        #     labeled_img[label_hue == 0] = 0
+        #     labeled_img =  in_img+labeled_img
+        #     labeled_img = cv2.resize(labeled_img, self.img_size)
+        #     predict_frames.append(labeled_img)
+
+
+
+##################img 1#######################
         # for i in range(128):
             
         #     frame = cv2.cvtColor(imgs[:,:,i], cv2.COLOR_GRAY2RGB)
@@ -352,3 +477,49 @@ if __name__ == "__main__":
     window = MriWidget(mri_file="2400106729.nii.gzMDkvMjAvMjAyNCwgMTg6Mjc6MzM=")
     window.show()
     sys.exit(app.exec())
+
+class VolumeClassWidget(QWidget):
+    def __init__(self, parent = None):
+        super(VolumeClassWidget,self).__init__(parent=parent)
+        self.setFixedSize(400,100)
+        self.colorlb = QLabel(parent=self)
+        self.colorlb.setGeometry(0,0,100,100)
+        self.textlb = QLabel(self)
+        self.textlb.move(110,0)
+        self.textlb.setStyleSheet("color:white; font-size:30px;")
+
+        
+    def set_value(self, color, volumevalue, max_color):
+        self.colorlb.setPixmap(self.convert_cv_to_qt(color=color, max_color=max_color))
+        str_volume = "{price:.3f} ml".format(price= volumevalue)
+        self.textlb.setText(str_volume)
+        self.textlb.adjustSize()
+    def convert_cv_to_qt(self, color, max_color):
+        print("widget_color:",max_color)
+        array = np.full(shape=(100,100),fill_value=color)
+        label_hue = np.uint8(179 * array / np.max(np.asarray(max_color)))
+        blank_ch = 255 * np.ones_like(label_hue)
+        labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+        labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2RGB)
+        labeled_img[label_hue == 0] = 0
+        
+        w,h,ch = labeled_img.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QImage(labeled_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+        # p = convert_to_Qt_format.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio)
+        return QPixmap.fromImage(convert_to_Qt_format)
+    
+class Area:
+    def __init__(self, ar, area_idx):
+        self.ar = ar
+        self.continous = True
+        self.area_idx = area_idx
+        self.NOP = len(ar)
+    def translate_area(self, new_area):
+        self.ar = new_area
+        self.NOP += len(new_area)
+        self.continous = True
+    def discontinous(self):
+        self.continous = False
+def key(a:Area):
+        return a.NOP
