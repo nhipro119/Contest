@@ -8,6 +8,7 @@ import os
 import base64
 import asyncio
 from widget import mriView
+import pydicom
 class PatientWidget(QWidget):
     def __init__(self, parent=None, patient_info= None):
         super(PatientWidget, self).__init__(parent)
@@ -171,7 +172,11 @@ class PatientWidget(QWidget):
         if self.path != "":
             lf = os.listdir(self.path)
             for l in lf:
-                if not l.lower().endswith(".dcm"):
+                # if not l.lower().endswith(".dcm"):
+                try:
+                    pydicom.misc.is_dicom(os.path.join(self.path,l))
+                except:
+                    
                     self.parent().set_notice(title="warning", text="Thư mục đang chọn chứa tệp tin không phải dicom",icon=QMessageBox.Icon.Critical)
                     self.path = ""
                     return

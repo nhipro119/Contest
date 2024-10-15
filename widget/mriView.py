@@ -273,7 +273,7 @@ class MriWidget(QWidget):
         pi = 3.14156
         labeled_imgs = []
         predict_frames = []
-        for i in range(128):
+        for i in range(self.max_idx):
         # print("hinh",i,":",end=" ")
             ret, labels = cv2.connectedComponents(out_imgs[:,:,i])
             # new_area = np.where(labels == 1)
