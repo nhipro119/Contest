@@ -14,7 +14,6 @@ import os
 import asyncio
 import threading
 import time
-import matplotlib.pyplot as plt
 class MriWidget(QWidget):
     def __init__(self, parent=None, patientID=None,size=[1520,1080], patient_name=None):
         super(MriWidget,self).__init__(parent)
@@ -194,7 +193,7 @@ class MriWidget(QWidget):
             self.dislay_volume(volume=volume_data)
     def create_predict_widget(self):
         self.volume_lb = QWidget(parent=self)
-        self.volume_lb.setGeometry(30,396,340,500)
+        self.volume_lb.setGeometry(30,396,340,550)
         self.volume_lb.setStyleSheet("border:3px solid; border-radius:20px; border-color:#FFFFFF;background-color:#222831;")
         self.volume_lb.hide()
         
@@ -211,12 +210,16 @@ class MriWidget(QWidget):
         self.vlb.move(50,493)
         self.vlb.hide()
         
+        self.tong_so_vung_lb = QLabel(self)
+        self.tong_so_vung_lb.move(50,545)
+        self.tong_so_vung_lb.setStyleSheet("font-size:30px; color:white; ")
+        self.tong_so_vung_lb.hide()
         
-        self.mmlb = QLabel(parent=self)
-        self.mmlb.setGeometry(200,493,82,44)
-        self.mmlb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/mm.png")))
-        self.mmlb.setStyleSheet("background-color:#222831;")
-        self.mmlb.hide()
+        # self.mmlb = QLabel(parent=self)
+        # self.mmlb.setGeometry(200,493,82,44)
+        # self.mmlb.setPixmap(QPixmap(os.path.join(os.getcwd(),"icon/mm.png")))
+        # self.mmlb.setStyleSheet("background-color:#222831;")
+        # self.mmlb.hide()
 
         self.svllo = QVBoxLayout()
         self.vllbs = []
@@ -229,7 +232,7 @@ class MriWidget(QWidget):
         
         svlwg.setLayout(self.svllo)
         self.svla = QScrollArea(self)
-        self.svla.setGeometry(35,570,330,300)
+        self.svla.setGeometry(35,600,330,300)
         self.svla.setWidget(svlwg)
         self.svla.verticalScrollBar().hide()
         self.svla.horizontalScrollBar().hide()
@@ -240,10 +243,12 @@ class MriWidget(QWidget):
     def dislay_volume(self,volume):
         self.volume_lb.show()
         self.lb.show()
-        self.vlb.setText(volume)
+        str_volume = "Tổng: {} ml".format(volume)
+        self.vlb.setText(str_volume)
         self.vlb.adjustSize()
         self.vlb.show()
-        self.mmlb.show()        
+        self.tong_so_vung_lb.show()
+        # self.mmlb.show()        
         
     def process_predict_data(self):
         
@@ -312,7 +317,7 @@ class MriWidget(QWidget):
             zero = np.zeros(shape=labels.shape)
             for aai in area_each_image.keys():
 
-                print("anh co vung ", aai, " thuoc area ",area_each_image[aai])
+                # print("anh co vung ", aai, " thuoc area ",area_each_image[aai])
                 temp = np.where(labels == aai, area_each_image[aai],0)
                 zero = zero + temp
             labeled_imgs.append(zero)
@@ -322,7 +327,7 @@ class MriWidget(QWidget):
 
 
         for i in range(len(labeled_imgs)):
-            print(np.max(np.asarray(labeled_imgs)))
+            # print(np.max(np.asarray(labeled_imgs)))
             label_hue = np.uint8(179 * labeled_imgs[i] / np.max(np.asarray(labeled_imgs)))
             blank_ch = 255 * np.ones_like(label_hue)
             labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
@@ -347,6 +352,7 @@ class MriWidget(QWidget):
             labeled_img = cv2.resize(labeled_img, self.img_size)
             predict_frames.append(labeled_img)
         areas.sort(reverse = True, key = key)
+        self.tong_so_vung_lb.setText("Có {} vùng tụ máu".format(len(areas)))
         for i in range(min(len(areas),100)):
             self.vllbs[i].set_value(areas[i].area_idx, areas[i].NOP*self.pixdim/1000, len(areas))
 
